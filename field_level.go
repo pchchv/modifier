@@ -17,3 +17,10 @@ type FieldLevel interface {
 	// Param returns the param associated wth the given function modifier.
 	Param() string
 }
+
+type fieldLevel struct {
+	transformer *Transformer
+	parent      reflect.Value
+	current     reflect.Value
+	param       string
+}
