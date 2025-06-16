@@ -1,6 +1,7 @@
 package modifier
 
 import (
+	"reflect"
 	"sync"
 	"sync/atomic"
 )
@@ -40,4 +41,20 @@ type cStruct struct {
 type structCache struct {
 	lock sync.Mutex
 	m    atomic.Value // map[reflect.Type]*cStruct
+}
+
+func (sc *structCache) Get(key reflect.Type) (c *cStruct, found bool) {
+	c, found = sc.m.Load().(map[reflect.Type]*cStruct)[key]
+	return
+}
+
+func (sc *structCache) Set(key reflect.Type, value *cStruct) {
+	m := sc.m.Load().(map[reflect.Type]*cStruct)
+	nm := make(map[reflect.Type]*cStruct, len(m)+1)
+	for k, v := range m {
+		nm[k] = v
+	}
+
+	nm[key] = value
+	sc.m.Store(nm)
 }
