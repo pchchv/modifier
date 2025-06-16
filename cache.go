@@ -27,6 +27,11 @@ type cTag struct {
 	typeof         tagType
 }
 
+type cField struct {
+	idx   int
+	cTags *cTag
+}
+
 type structCache struct {
 	lock sync.Mutex
 	m    atomic.Value // map[reflect.Type]*cStruct
