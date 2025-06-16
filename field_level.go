@@ -24,3 +24,15 @@ type fieldLevel struct {
 	current     reflect.Value
 	param       string
 }
+
+func (f fieldLevel) Parent() reflect.Value {
+	return f.parent
+}
+
+func (f fieldLevel) Field() reflect.Value {
+	return f.current
+}
+
+func (f fieldLevel) Param() string {
+	return f.param
+}
