@@ -34,3 +34,20 @@ type Transformer struct {
 	cCache           *structCache
 	tCache           *tagCache
 }
+
+// New creates a new Transform object with default tag name of 'mold'.
+func New() *Transformer {
+	tc := new(tagCache)
+	tc.m.Store(make(map[string]*cTag))
+	sc := new(structCache)
+	sc.m.Store(make(map[reflect.Type]*cStruct))
+
+	return &Transformer{
+		tagName:         "mold",
+		aliases:         make(map[string]string),
+		transformations: make(map[string]Func),
+		interceptors:    make(map[reflect.Type]InterceptorFunc),
+		cCache:          sc,
+		tCache:          tc,
+	}
+}
