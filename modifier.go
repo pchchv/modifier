@@ -12,6 +12,10 @@ type InterceptorFunc func(current reflect.Value) (inner reflect.Value)
 // Func defines a transform function for use.
 type Func func(ctx context.Context, fl FieldLevel) error
 
+// StructLevelFunc accepts all values needed for struct level manipulation.
+// This is needed for structs that may not be accessed or allowed to add tags from other packages in use.
+type StructLevelFunc func(ctx context.Context, sl StructLevel) error
+
 // Transform represents a subset of the
 // current *Transformer that is executing the
 // current transformation.
