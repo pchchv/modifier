@@ -15,3 +15,9 @@ type StructLevel interface {
 	// Struct returns the value of the current struct being modified.
 	Struct() reflect.Value
 }
+
+type structLevel struct {
+	transformer *Transformer
+	parent      reflect.Value
+	current     reflect.Value
+}
