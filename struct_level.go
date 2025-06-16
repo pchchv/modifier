@@ -21,3 +21,11 @@ type structLevel struct {
 	parent      reflect.Value
 	current     reflect.Value
 }
+
+func (s structLevel) Parent() reflect.Value {
+	return s.parent
+}
+
+func (s structLevel) Struct() reflect.Value {
+	return s.current
+}
