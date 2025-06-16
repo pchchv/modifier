@@ -23,3 +23,14 @@ type Transform interface {
 	Struct(ctx context.Context, v interface{}) error
 	Field(ctx context.Context, v interface{}, tags string) error
 }
+
+// Transformer is the base controlling object which contains all necessary information
+type Transformer struct {
+	tagName          string
+	aliases          map[string]string
+	transformations  map[string]Func
+	structLevelFuncs map[reflect.Type]StructLevelFunc
+	interceptors     map[reflect.Type]InterceptorFunc
+	cCache           *structCache
+	tCache           *tagCache
+}
