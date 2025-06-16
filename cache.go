@@ -32,6 +32,11 @@ type cField struct {
 	cTags *cTag
 }
 
+type cStruct struct {
+	fields []*cField
+	fn     StructLevelFunc
+}
+
 type structCache struct {
 	lock sync.Mutex
 	m    atomic.Value // map[reflect.Type]*cStruct
