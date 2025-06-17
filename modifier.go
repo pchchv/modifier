@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 )
 
 var (
+	timeType           = reflect.TypeOf(time.Time{})
 	restrictedTagErr   = "Tag '%s' either contains restricted characters or is the same as a restricted tag needed for normal operation"
 	restrictedAliasErr = "Alias '%s' either contains restricted characters or is the same as a restricted tag needed for normal operation"
 )
@@ -128,4 +130,120 @@ func (t *Transformer) RegisterInterceptor(fn InterceptorFunc, types ...interface
 	for _, typ := range types {
 		t.interceptors[reflect.TypeOf(typ)] = fn
 	}
+}
+
+func (t *Transformer) setByField(ctx context.Context, orig reflect.Value, ct *cTag) (err error) {
+	current, kind := t.extractType(orig)
+	if ct != nil && ct.hasTag {
+		for ct != nil {
+			switch ct.typeof {
+			case typeEndKeys:
+				return
+			case typeDive:
+				ct = ct.next
+				switch kind {
+				case reflect.Slice, reflect.Array:
+					err = t.setByIterable(ctx, current, ct)
+				case reflect.Map:
+					err = t.setByMap(ctx, current, ct)
+				case reflect.Ptr:
+					innerKind := current.Type().Elem().Kind()
+					if innerKind == reflect.Slice || innerKind == reflect.Map {
+						// is a nil pointer to a slice or map, nothing to do.
+						return nil
+					}
+					// not a valid use of the dive tag
+					fallthrough
+				default:
+					err = ErrInvalidDive
+				}
+				return
+			default:
+				if !current.CanAddr() {
+					newVal := reflect.New(current.Type()).Elem()
+					newVal.Set(current)
+					if err = ct.fn(ctx, fieldLevel{
+						transformer: t,
+						parent:      orig,
+						current:     newVal,
+						param:       ct.param,
+					}); err != nil {
+						return
+					}
+					orig.Set(reflect.Indirect(newVal))
+					current, kind = t.extractType(orig)
+				} else {
+					if err = ct.fn(ctx, fieldLevel{
+						transformer: t,
+						parent:      orig,
+						current:     current,
+						param:       ct.param,
+					}); err != nil {
+						return
+					}
+					// value could have been changed or reassigned
+					current, kind = t.extractType(current)
+				}
+				ct = ct.next
+			}
+		}
+	}
+
+	// need to do this again because one of the
+	// previous sets could have set a struct value,
+	// where it was a nil pointer before
+	orig2 := current
+	current, kind = t.extractType(current)
+	if kind == reflect.Struct {
+		typ := current.Type()
+		if typ == timeType {
+			return
+		}
+
+		if !current.CanAddr() {
+			newVal := reflect.New(typ).Elem()
+			newVal.Set(current)
+
+			if err = t.setByStruct(ctx, orig, newVal, typ); err != nil {
+				return
+			}
+			orig.Set(reflect.Indirect(newVal))
+			return
+		}
+		err = t.setByStruct(ctx, orig2, current, typ)
+	}
+	return
+}
+
+func (t *Transformer) setByMap(ctx context.Context, current reflect.Value, ct *cTag) error {
+	for _, key := range current.MapKeys() {
+		newVal := reflect.New(current.Type().Elem()).Elem()
+		newVal.Set(current.MapIndex(key))
+		if ct != nil && ct.typeof == typeKeys && ct.keys != nil {
+			// remove current map key as we may be changing it
+			// and re-add to the map afterwards
+			current.SetMapIndex(key, reflect.Value{})
+			newKey := reflect.New(current.Type().Key()).Elem()
+			newKey.Set(key)
+			key = newKey
+			// handle map key
+			if err := t.setByField(ctx, key, ct.keys); err != nil {
+				return err
+			}
+
+			// can be nil when just keys being validated
+			if ct.next != nil {
+				if err := t.setByField(ctx, newVal, ct.next); err != nil {
+					return err
+				}
+			}
+		} else {
+			if err := t.setByField(ctx, newVal, ct); err != nil {
+				return err
+			}
+		}
+		current.SetMapIndex(key, newVal)
+	}
+
+	return nil
 }
