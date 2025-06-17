@@ -2,6 +2,8 @@ package modifier
 
 import "reflect"
 
+var _ StructLevel = (*structLevel)(nil)
+
 // StructLevel represents the interface for struct level modifier function
 type StructLevel interface {
 	// Transformer represents a subset of the current *Transformer that is executing the current transformation.
@@ -28,4 +30,8 @@ func (s structLevel) Parent() reflect.Value {
 
 func (s structLevel) Struct() reflect.Value {
 	return s.current
+}
+
+func (s structLevel) Transformer() Transform {
+	return s.transformer
 }
