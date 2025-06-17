@@ -126,6 +126,60 @@ func (t *Transformer) RegisterInterceptor(fn InterceptorFunc, types ...interface
 	}
 }
 
+// Struct applies transformations against the provided struct.
+func (t *Transformer) Struct(ctx context.Context, v interface{}) error {
+	orig := reflect.ValueOf(v)
+	if orig.Kind() != reflect.Ptr || orig.IsNil() {
+		return &ErrInvalidTransformValue{typ: reflect.TypeOf(v), fn: "Struct"}
+	}
+
+	val := orig.Elem()
+	typ := val.Type()
+	if val.Kind() != reflect.Struct || val.Type() == timeType {
+		return &ErrInvalidTransformation{typ: reflect.TypeOf(v)}
+	}
+
+	return t.setByStruct(ctx, orig, val, typ)
+}
+
+// Field applies the provided transformations against the variable.
+func (t *Transformer) Field(ctx context.Context, v interface{}, tags string) (err error) {
+	if len(tags) == 0 || tags == ignoreTag {
+		return nil
+	}
+
+	val := reflect.ValueOf(v)
+	if val.Kind() != reflect.Ptr || val.IsNil() {
+		return &ErrInvalidTransformValue{typ: reflect.TypeOf(v), fn: "Field"}
+	}
+
+	val = val.Elem()
+	// find cached tag
+	ctag, ok := t.tCache.Get(tags)
+	if !ok {
+		t.tCache.lock.Lock()
+		// could have been multiple trying to access,
+		// but once first is done this ensures tag isn't parsed again
+		ctag, ok = t.tCache.Get(tags)
+		if !ok {
+			if ctag, _, err = t.parseFieldTagsRecursive(tags, "", "", false); err != nil {
+				t.tCache.lock.Unlock()
+				return
+			}
+			t.tCache.Set(tags, ctag)
+		}
+		t.tCache.lock.Unlock()
+	}
+
+	return t.setByField(ctx, val, ctag)
+}
+
+// SetTagName sets the given tag name to be used.
+// Default is "trans".
+func (t *Transformer) SetTagName(tagName string) {
+	t.tagName = tagName
+}
+
 func (t *Transformer) setByField(ctx context.Context, orig reflect.Value, ct *cTag) (err error) {
 	current, kind := t.extractType(orig)
 	if ct != nil && ct.hasTag {
