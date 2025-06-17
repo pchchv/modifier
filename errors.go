@@ -1,6 +1,9 @@
 package modifier
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // ErrInvalidTag defines a bad value for a tag being used.
 type ErrInvalidTag struct {
@@ -17,4 +20,9 @@ func (e *ErrInvalidTag) Error() string {
 type ErrUndefinedTag struct {
 	tag   string
 	field string
+}
+
+// Error returns the UndefinedTag error text.
+func (e *ErrUndefinedTag) Error() string {
+	return strings.TrimSpace(fmt.Sprintf("unregistered/undefined transformation '%s' found on field %s", e.tag, e.field))
 }
