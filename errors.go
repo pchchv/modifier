@@ -61,3 +61,8 @@ func (e *ErrInvalidTransformValue) Error() string {
 type ErrInvalidTransformation struct {
 	typ reflect.Type
 }
+
+// Error returns ErrInvalidTransformation message.
+func (e *ErrInvalidTransformation) Error() string {
+	return "mold: (nil " + e.typ.String() + ")"
+}
