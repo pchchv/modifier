@@ -56,3 +56,8 @@ func (e *ErrInvalidTransformValue) Error() string {
 
 	return fmt.Sprintf("mold: %s(nil %s)", e.fn, e.typ.String())
 }
+
+// ErrInvalidTransformation describes an invalid argument passed to `Struct` or `Field`.
+type ErrInvalidTransformation struct {
+	typ reflect.Type
+}
