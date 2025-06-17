@@ -44,3 +44,15 @@ type ErrInvalidTransformValue struct {
 	typ reflect.Type
 	fn  string
 }
+
+func (e *ErrInvalidTransformValue) Error() string {
+	if e.typ == nil {
+		return fmt.Sprintf("mold: %s(nil)", e.fn)
+	}
+
+	if e.typ.Kind() != reflect.Ptr {
+		return fmt.Sprintf("mold: %s(non-pointer %s)", e.fn, e.typ.String())
+	}
+
+	return fmt.Sprintf("mold: %s(nil %s)", e.fn, e.typ.String())
+}
