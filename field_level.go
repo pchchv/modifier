@@ -2,6 +2,8 @@ package modifier
 
 import "reflect"
 
+var _ FieldLevel = (*fieldLevel)(nil)
+
 // FieldLevel represents the interface for field level modifier function.
 type FieldLevel interface {
 	// Transformer represents a subset of the current *Transformer that is executing the current transformation.
@@ -35,4 +37,8 @@ func (f fieldLevel) Field() reflect.Value {
 
 func (f fieldLevel) Param() string {
 	return f.param
+}
+
+func (f fieldLevel) Transformer() Transform {
+	return f.transformer
 }
