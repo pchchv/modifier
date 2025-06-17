@@ -184,3 +184,53 @@ func (t *Transformer) parseFieldTagsRecursive(tag string, fieldName string, alia
 
 	return
 }
+
+func (t *Transformer) extractStructCache(current reflect.Value) (cs *cStruct, err error) {
+	t.cCache.lock.Lock()
+	defer t.cCache.lock.Unlock()
+	typ := current.Type()
+	// could have been multiple trying to access, but once first is done this ensures struct isn't parsed again
+	cs, ok := t.cCache.Get(typ)
+	if ok {
+		return cs, nil
+	}
+
+	var ctag *cTag
+	var tag string
+	var fld reflect.StructField
+	cs = &cStruct{fields: make([]*cField, 0), fn: t.structLevelFuncs[typ]}
+	numFields := current.NumField()
+	for i := 0; i < numFields; i++ {
+		fld = typ.Field(i)
+		if !fld.Anonymous && len(fld.PkgPath) > 0 {
+			continue
+		}
+
+		tag = fld.Tag.Get(t.tagName)
+		if tag == ignoreTag {
+			continue
+		}
+
+		// NOTE: cannot use shared tag cache, because tags may be equal,
+		// but things like alias may be different and so only struct level caching can
+		// be used instead of combined with Field tag caching
+		if len(tag) > 0 {
+			ctag, _, err = t.parseFieldTagsRecursive(tag, fld.Name, "", false)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			// even if field doesn't have validations need cTag for traversing to
+			// potential inner/nested elements of the field
+			ctag = &cTag{typeof: typeDefault}
+		}
+
+		cs.fields = append(cs.fields, &cField{
+			idx:   i,
+			cTags: ctag,
+		})
+	}
+
+	t.cCache.Set(typ, cs)
+	return cs, nil
+}
