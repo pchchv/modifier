@@ -3,6 +3,7 @@ package modifier
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -35,4 +36,11 @@ type ErrUndefinedTag struct {
 // Error returns the UndefinedTag error text.
 func (e *ErrUndefinedTag) Error() string {
 	return strings.TrimSpace(fmt.Sprintf("unregistered/undefined transformation '%s' found on field %s", e.tag, e.field))
+}
+
+// An ErrInvalidTransformValue describes an invalid argument passed to Struct or Var.
+// The argument passed must be a non-nil pointer.
+type ErrInvalidTransformValue struct {
+	typ reflect.Type
+	fn  string
 }
