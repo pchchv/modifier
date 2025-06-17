@@ -12,3 +12,9 @@ type ErrInvalidTag struct {
 func (e *ErrInvalidTag) Error() string {
 	return fmt.Sprintf("invalid tag '%s' found on field %s", e.tag, e.field)
 }
+
+// ErrUndefinedTag defines a tag that does not exist.
+type ErrUndefinedTag struct {
+	tag   string
+	field string
+}
