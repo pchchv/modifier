@@ -61,12 +61,6 @@ func New() *Transformer {
 	}
 }
 
-// // SetTagName sets the given tag name to be used.
-// // Default is "trans"
-// func (t *Transformer) SetTagName(tagName string) {
-// 	t.tagName = tagName
-// }
-
 // Register adds a transformation with the given tag.
 //
 // NOTES:
@@ -243,6 +237,46 @@ func (t *Transformer) setByMap(ctx context.Context, current reflect.Value, ct *c
 			}
 		}
 		current.SetMapIndex(key, newVal)
+	}
+
+	return nil
+}
+
+func (t *Transformer) setByIterable(ctx context.Context, current reflect.Value, ct *cTag) (err error) {
+	for i := 0; i < current.Len(); i++ {
+		if err = t.setByField(ctx, current.Index(i), ct); err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+func (t *Transformer) setByStruct(ctx context.Context, parent, current reflect.Value, typ reflect.Type) (err error) {
+	cs, ok := t.cCache.Get(typ)
+	if !ok {
+		if cs, err = t.extractStructCache(current); err != nil {
+			return
+		}
+	}
+
+	// run is struct has a corresponding struct level transformation
+	if cs.fn != nil {
+		if err = cs.fn(ctx, structLevel{
+			transformer: t,
+			parent:      parent,
+			current:     current,
+		}); err != nil {
+			return
+		}
+	}
+
+	var f *cField
+	for i := 0; i < len(cs.fields); i++ {
+		f = cs.fields[i]
+		if err = t.setByField(ctx, current.Field(f.idx), f.cTags); err != nil {
+			return
+		}
 	}
 
 	return nil
