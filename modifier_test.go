@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -168,4 +169,63 @@ func TestStructLevel(t *testing.T) {
 	tt.String = "error"
 	err = set.Struct(context.Background(), &tt)
 	NotEqual(t, err, nil)
+}
+
+func TestAlias(t *testing.T) {
+	type Test struct {
+		String string `r:"repl,repl2"`
+	}
+
+	var tt Test
+	set := New()
+	set.SetTagName("r")
+	set.Register("repl", func(ctx context.Context, fl FieldLevel) error {
+		fl.Field().SetString("test")
+		return nil
+	})
+	set.Register("repl2", func(ctx context.Context, fl FieldLevel) error {
+		fl.Field().SetString("test2")
+		return nil
+	})
+
+	err := set.Struct(context.Background(), &tt)
+	Equal(t, err, nil)
+	Equal(t, tt.String, "test2")
+
+	set.RegisterAlias("rep", "repl,repl2")
+	set.RegisterAlias("bad", "repl,,repl2")
+	type Test2 struct {
+		String string `r:"rep"`
+	}
+
+	var tt2 Test2
+	err = set.Struct(context.Background(), &tt2)
+	Equal(t, err, nil)
+	Equal(t, tt.String, "test2")
+
+	var s string
+	err = set.Field(context.Background(), &s, "bad")
+	NotEqual(t, err, nil)
+
+	// var s string
+	err = set.Field(context.Background(), &s, "repl,rep,bad")
+	NotEqual(t, err, nil)
+}
+
+func TestParam(t *testing.T) {
+	type Test struct {
+		String string `r:"ltrim=#$_"`
+	}
+
+	set := New()
+	set.SetTagName("r")
+	set.Register("ltrim", func(ctx context.Context, fl FieldLevel) error {
+		fl.Field().SetString(strings.TrimLeft(fl.Field().String(), fl.Param()))
+		return nil
+	})
+
+	tt := Test{String: "_test"}
+	err := set.Struct(context.Background(), &tt)
+	Equal(t, err, nil)
+	Equal(t, tt.String, "test")
 }
