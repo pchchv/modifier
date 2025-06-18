@@ -519,3 +519,128 @@ func TestTimeType(t *testing.T) {
 	NotEqual(t, err, nil)
 	Equal(t, errors.Is(err, ErrInvalidDive), true)
 }
+
+func TestBasicTransform(t *testing.T) {
+	type Test struct {
+		String string `r:"repl"`
+	}
+
+	var tt Test
+	set := New()
+	set.SetTagName("r")
+	set.Register("repl", func(ctx context.Context, fl FieldLevel) error {
+		fl.Field().SetString("test")
+		return nil
+	})
+
+	val := reflect.ValueOf(tt)
+	// trigger a wait in struct parsing
+	for i := 0; i < 3; i++ {
+		_, err := set.extractStructCache(val)
+		Equal(t, err, nil)
+	}
+	err := set.Struct(context.Background(), &tt)
+	Equal(t, err, nil)
+	Equal(t, tt.String, "test")
+
+	type Test2 struct {
+		Test   Test
+		String string `r:"repl"`
+	}
+
+	var tt2 Test2
+	err = set.Struct(context.Background(), &tt2)
+	Equal(t, err, nil)
+	Equal(t, tt2.Test.String, "test")
+	Equal(t, tt2.String, "test")
+
+	type Test3 struct {
+		Test
+		String string `r:"repl"`
+	}
+
+	var tt3 Test3
+	err = set.Struct(context.Background(), &tt3)
+	Equal(t, err, nil)
+	Equal(t, tt3.Test.String, "test")
+	Equal(t, tt3.String, "test")
+
+	type Test4 struct {
+		Test   *Test
+		String string `r:"repl"`
+	}
+
+	var tt4 Test4
+	err = set.Struct(context.Background(), &tt4)
+	Equal(t, err, nil)
+	Equal(t, tt4.Test, nil)
+	Equal(t, tt4.String, "test")
+
+	tt5 := Test4{Test: &Test{}}
+	err = set.Struct(context.Background(), &tt5)
+	Equal(t, err, nil)
+	Equal(t, tt5.Test.String, "test")
+	Equal(t, tt5.String, "test")
+
+	type Test6 struct {
+		Test   *Test  `r:"default"`
+		String string `r:"repl"`
+	}
+
+	var tt6 Test6
+	set.Register("default", func(ctx context.Context, fl FieldLevel) error {
+		fl.Field().Set(reflect.New(fl.Field().Type().Elem()))
+		return nil
+	})
+	err = set.Struct(context.Background(), &tt6)
+	Equal(t, err, nil)
+	NotEqual(t, tt6.Test, nil)
+	Equal(t, tt6.Test.String, "test")
+	Equal(t, tt6.String, "test")
+
+	tt6.String = "BAD"
+	var tString string
+	// wil invoke one processing and one waiting
+	go func() {
+		err := set.Field(context.Background(), &tString, "repl")
+		Equal(t, err, nil)
+	}()
+	err = set.Field(context.Background(), &tt6.String, "repl")
+	Equal(t, err, nil)
+	Equal(t, tt6.String, "test")
+
+	err = set.Field(context.Background(), &tt6.String, "")
+	Equal(t, err, nil)
+
+	err = set.Field(context.Background(), &tt6.String, "-")
+	Equal(t, err, nil)
+
+	err = set.Field(context.Background(), tt6.String, "test")
+	NotEqual(t, err, nil)
+	Equal(t, err.Error(), "mold: Field(non-pointer string)")
+
+	err = set.Field(context.Background(), nil, "test")
+	NotEqual(t, err, nil)
+	Equal(t, err.Error(), "mold: Field(nil)")
+
+	var iface interface{}
+	err = set.Field(context.Background(), iface, "test")
+	NotEqual(t, err, nil)
+	Equal(t, err.Error(), "mold: Field(nil)")
+
+	done := make(chan struct{})
+	go func() {
+		err := set.Field(context.Background(), &tString, "nonexistant")
+		NotEqual(t, err, nil)
+		close(done)
+	}()
+
+	err = set.Field(context.Background(), &tt6.String, "nonexistant")
+	NotEqual(t, err, nil)
+	Equal(t, err.Error(), "unregistered/undefined transformation 'nonexistant' found on field")
+
+	<-done
+	set.Register("dummy", func(ctx context.Context, fl FieldLevel) error { return nil })
+	err = set.Field(context.Background(), &tt6.String, "dummy")
+	Equal(t, err, nil)
+}
