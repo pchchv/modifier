@@ -354,3 +354,95 @@ func TestInterfacePtr(t *testing.T) {
 	err = set.Struct(context.Background(), &tt2)
 	Equal(t, err, nil)
 }
+
+func TestArray(t *testing.T) {
+	type Test struct {
+		Arr []string `s:"defaultArr,dive,defaultStr"`
+	}
+
+	set := New()
+	set.SetTagName("s")
+	set.Register("defaultArr", func(ctx context.Context, fl FieldLevel) error {
+		if HasValue(fl.Field()) {
+			return nil
+		}
+		fl.Field().Set(reflect.MakeSlice(fl.Field().Type(), 2, 2))
+		return nil
+	})
+	set.Register("defaultStr", func(ctx context.Context, fl FieldLevel) error {
+		if fl.Field().String() == "ok" {
+			return errors.New("ALREADY OK")
+		}
+		fl.Field().SetString("default")
+		return nil
+	})
+
+	var tt Test
+	err := set.Struct(context.Background(), &tt)
+	Equal(t, err, nil)
+	Equal(t, len(tt.Arr), 2)
+	Equal(t, tt.Arr[0], "default")
+	Equal(t, tt.Arr[1], "default")
+
+	tt2 := Test{
+		Arr: make([]string, 1),
+	}
+
+	err = set.Struct(context.Background(), &tt2)
+	Equal(t, err, nil)
+	Equal(t, len(tt2.Arr), 1)
+	Equal(t, tt2.Arr[0], "default")
+
+	tt3 := Test{
+		Arr: []string{"ok"},
+	}
+
+	err = set.Struct(context.Background(), &tt3)
+	NotEqual(t, err, nil)
+	Equal(t, err.Error(), "ALREADY OK")
+}
+
+func TestMap(t *testing.T) {
+	type Test struct {
+		Map map[string]string `s:"defaultMap,dive,defaultStr"`
+	}
+
+	set := New()
+	set.SetTagName("s")
+	set.Register("defaultMap", func(ctx context.Context, fl FieldLevel) error {
+		if HasValue(fl.Field()) {
+			return nil
+		}
+		fl.Field().Set(reflect.MakeMap(fl.Field().Type()))
+		return nil
+	})
+	set.Register("defaultStr", func(ctx context.Context, fl FieldLevel) error {
+		if fl.Field().String() == "ok" {
+			return errors.New("ALREADY OK")
+		}
+		fl.Field().SetString("default")
+		return nil
+	})
+
+	var tt Test
+	err := set.Struct(context.Background(), &tt)
+	Equal(t, err, nil)
+	Equal(t, len(tt.Map), 0)
+
+	tt2 := Test{
+		Map: map[string]string{"key": ""},
+	}
+
+	err = set.Struct(context.Background(), &tt2)
+	Equal(t, err, nil)
+	Equal(t, len(tt2.Map), 1)
+	Equal(t, tt2.Map["key"], "default")
+
+	tt3 := Test{
+		Map: map[string]string{"key": "ok"},
+	}
+
+	err = set.Struct(context.Background(), &tt3)
+	NotEqual(t, err, nil)
+	Equal(t, err.Error(), "ALREADY OK")
+}
