@@ -229,3 +229,128 @@ func TestParam(t *testing.T) {
 	Equal(t, err, nil)
 	Equal(t, tt.String, "test")
 }
+
+func TestInterface(t *testing.T) {
+	type Test struct {
+		Iface interface{} `s:"default"`
+	}
+
+	type Inner struct {
+		STR    string
+		String string `s:"defaultStr"`
+	}
+
+	type Test2 struct {
+		Iface interface{} `s:"default2"`
+	}
+
+	type Inner2 struct {
+		String string `s:"error"`
+	}
+
+	set := New()
+	set.SetTagName("s")
+	set.Register("default", func(ctx context.Context, fl FieldLevel) error {
+		fl.Field().Set(reflect.ValueOf(Inner{STR: "test"}))
+		return nil
+	})
+	set.Register("default2", func(ctx context.Context, fl FieldLevel) error {
+		fl.Field().Set(reflect.ValueOf(Inner2{}))
+		return nil
+	})
+	set.Register("defaultStr", func(ctx context.Context, fl FieldLevel) error {
+		if HasValue(fl.Field()) && fl.Field().String() == "ok" {
+			return errors.New("ALREADY OK")
+		}
+		fl.Field().Set(reflect.ValueOf("default"))
+		return nil
+	})
+	set.Register("error", func(ctx context.Context, fl FieldLevel) error {
+		return errors.New("BAD VALUE")
+	})
+
+	var tt Test
+	err := set.Struct(context.Background(), &tt)
+	Equal(t, err, nil)
+	NotEqual(t, tt.Iface, nil)
+
+	inner, ok := tt.Iface.(Inner)
+	Equal(t, ok, true)
+	Equal(t, inner.String, "default")
+	Equal(t, inner.STR, "test")
+
+	var tt2 Test2
+	err = set.Struct(context.Background(), &tt2)
+	NotEqual(t, err, nil)
+
+	type Test3 struct {
+		Iface interface{} `s:"defaultStr"`
+	}
+
+	var tt3 Test3
+	tt3.Iface = "String"
+	err = set.Struct(context.Background(), &tt3)
+	Equal(t, err, nil)
+	Equal(t, tt3.Iface.(string), "default")
+
+	type Test4 struct {
+		Iface interface{} `s:"defaultStr,defaultStr"`
+	}
+
+	var tt4 Test4
+	tt4.Iface = nil
+	err = set.Struct(context.Background(), &tt4)
+	Equal(t, err, nil)
+	Equal(t, tt4.Iface.(string), "default")
+
+	type Test5 struct {
+		Iface interface{} `s:"defaultStr,error"`
+	}
+
+	var tt5 Test5
+	tt5.Iface = "String"
+	err = set.Struct(context.Background(), &tt5)
+	NotEqual(t, err, nil)
+}
+
+func TestInterfacePtr(t *testing.T) {
+	type Test struct {
+		Iface interface{} `s:"default"`
+	}
+
+	type Inner struct {
+		String string `s:"defaultStr"`
+	}
+
+	set := New()
+	set.SetTagName("s")
+	set.Register("default", func(ctx context.Context, fl FieldLevel) error {
+		fl.Field().Set(reflect.ValueOf(new(Inner)))
+		return nil
+	})
+	set.Register("defaultStr", func(ctx context.Context, fl FieldLevel) error {
+		if fl.Field().String() == "ok" {
+			return errors.New("ALREADY OK")
+		}
+		fl.Field().SetString("default")
+		return nil
+	})
+
+	var tt Test
+	err := set.Struct(context.Background(), &tt)
+	Equal(t, err, nil)
+	NotEqual(t, tt.Iface, nil)
+
+	inner, ok := tt.Iface.(*Inner)
+	Equal(t, ok, true)
+	Equal(t, inner.String, "default")
+
+	type Test2 struct {
+		Iface interface{}
+	}
+
+	var tt2 Test2
+	tt2.Iface = Inner{}
+	err = set.Struct(context.Background(), &tt2)
+	Equal(t, err, nil)
+}
