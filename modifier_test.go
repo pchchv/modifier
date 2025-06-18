@@ -69,6 +69,63 @@ func TestBadValues(t *testing.T) {
 	PanicMatches(t, func() { tform.RegisterAlias(",", "test") }, "Alias ',' either contains restricted characters or is the same as a restricted tag needed for normal operation")
 }
 
+func TestDiveKeys(t *testing.T) {
+	type Test struct {
+		Map map[string]string `s:"dive,keys,default,endkeys,default"`
+	}
+
+	set := New()
+	set.SetTagName("s")
+	set.Register("default", func(ctx context.Context, fl FieldLevel) error {
+		fl.Field().Set(reflect.ValueOf("after"))
+		return nil
+	})
+	set.Register("err", func(ctx context.Context, fl FieldLevel) error {
+		return errors.New("err")
+	})
+
+	test := Test{
+		Map: map[string]string{
+			"b4": "b4",
+		},
+	}
+
+	err := set.Struct(context.Background(), &test)
+	Equal(t, err, nil)
+
+	val := test.Map["after"]
+	Equal(t, val, "after")
+
+	m := map[string]string{
+		"b4": "b4",
+	}
+
+	err = set.Field(context.Background(), &m, "dive,keys,default,endkeys,default")
+	Equal(t, err, nil)
+
+	val = m["after"]
+	Equal(t, val, "after")
+
+	err = set.Field(context.Background(), &m, "keys,endkeys,default")
+	Equal(t, err, ErrInvalidKeysTag)
+
+	err = set.Field(context.Background(), &m, "dive,endkeys,default")
+	Equal(t, err, ErrUndefinedKeysTag)
+
+	err = set.Field(context.Background(), &m, "dive,keys,undefinedtag")
+	Equal(t, err, ErrUndefinedTag{tag: "undefinedtag"})
+
+	err = set.Field(context.Background(), &m, "dive,keys,err,endkeys")
+	NotEqual(t, err, nil)
+
+	m = map[string]string{
+		"b4": "b4",
+	}
+
+	err = set.Field(context.Background(), &m, "dive,keys,default,endkeys,err")
+	NotEqual(t, err, nil)
+}
+
 func TestStructArray(t *testing.T) {
 	type InnerStruct struct {
 		String string `s:"defaultStr"`
@@ -445,4 +502,20 @@ func TestMap(t *testing.T) {
 	err = set.Struct(context.Background(), &tt3)
 	NotEqual(t, err, nil)
 	Equal(t, err.Error(), "ALREADY OK")
+}
+
+func TestTimeType(t *testing.T) {
+	var tt time.Time
+	set := New()
+	set.Register("default", func(ctx context.Context, fl FieldLevel) error {
+		fl.Field().Set(reflect.ValueOf(time.Now()))
+		return nil
+	})
+
+	err := set.Field(context.Background(), &tt, "default")
+	Equal(t, err, nil)
+
+	err = set.Field(context.Background(), &tt, "default,dive")
+	NotEqual(t, err, nil)
+	Equal(t, errors.Is(err, ErrInvalidDive), true)
 }
