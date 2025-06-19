@@ -17,9 +17,11 @@ import (
 )
 
 var (
-	stripNumRegex        = regexp.MustCompile("[^0-9]")
-	stripAlphaRegex      = regexp.MustCompile("[0-9]")
-	stripNumUnicodeRegex = regexp.MustCompile(`[^\pL]`)
+	stripNumRegex         = regexp.MustCompile("[^0-9]")
+	stripAlphaRegex       = regexp.MustCompile("[0-9]")
+	stripAlphaUnicode     = regexp.MustCompile(`[\pL]`)
+	stripNumUnicodeRegex  = regexp.MustCompile(`[^\pL]`)
+	stripPunctuationRegex = regexp.MustCompile(`[[:punct:]]`)
 )
 
 // trimLeft trims extra left hand side of string using provided cutset.
@@ -167,6 +169,26 @@ func stripNumUnicodeCase(ctx context.Context, fl modifier.FieldLevel) error {
 	switch fl.Field().Kind() {
 	case reflect.String:
 		fl.Field().SetString(stripNumUnicodeRegex.ReplaceAllLiteralString(fl.Field().String(), ""))
+	}
+	return nil
+}
+
+// stripAlphaUnicodeCase removes alpha unicode characters.
+// E. g.: "Everything's here but the letters!" -> "' !".
+func stripAlphaUnicodeCase(ctx context.Context, fl modifier.FieldLevel) error {
+	switch fl.Field().Kind() {
+	case reflect.String:
+		fl.Field().SetString(stripAlphaUnicode.ReplaceAllLiteralString(fl.Field().String(), ""))
+	}
+	return nil
+}
+
+// stripPunctuation removes punctuation.
+// E. g.: "# M5W-1E6!!!" -> " M5W1E6".
+func stripPunctuation(ctx context.Context, fl modifier.FieldLevel) error {
+	switch fl.Field().Kind() {
+	case reflect.String:
+		fl.Field().SetString(stripPunctuationRegex.ReplaceAllLiteralString(fl.Field().String(), ""))
 	}
 	return nil
 }
