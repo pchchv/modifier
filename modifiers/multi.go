@@ -122,3 +122,10 @@ func defaultValue(ctx context.Context, fl modifier.FieldLevel) error {
 	}
 	return setValue(ctx, fl)
 }
+
+// empty sets the field to the zero value of the field type.
+func empty(_ context.Context, fl modifier.FieldLevel) error {
+	zeroValue := reflect.Zero(fl.Field().Type())
+	fl.Field().Set(zeroValue)
+	return nil
+}
