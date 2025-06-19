@@ -43,3 +43,12 @@ func trimSuffix(ctx context.Context, fl modifier.FieldLevel) error {
 	}
 	return nil
 }
+
+// trimSpace trims extra space from text.
+func trimSpace(ctx context.Context, fl modifier.FieldLevel) error {
+	switch fl.Field().Kind() {
+	case reflect.String:
+		fl.Field().SetString(strings.TrimSpace(fl.Field().String()))
+	}
+	return nil
+}
