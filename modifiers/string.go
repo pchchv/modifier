@@ -52,3 +52,21 @@ func trimSpace(ctx context.Context, fl modifier.FieldLevel) error {
 	}
 	return nil
 }
+
+// toLower convert string to lower case.
+func toLower(ctx context.Context, fl modifier.FieldLevel) error {
+	switch fl.Field().Kind() {
+	case reflect.String:
+		fl.Field().SetString(strings.ToLower(fl.Field().String()))
+	}
+	return nil
+}
+
+// toUpper convert string to upper case.
+func toUpper(ctx context.Context, fl modifier.FieldLevel) error {
+	switch fl.Field().Kind() {
+	case reflect.String:
+		fl.Field().SetString(strings.ToUpper(fl.Field().String()))
+	}
+	return nil
+}
