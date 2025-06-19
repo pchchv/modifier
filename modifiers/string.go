@@ -22,6 +22,13 @@ var (
 	stripAlphaUnicode     = regexp.MustCompile(`[\pL]`)
 	stripNumUnicodeRegex  = regexp.MustCompile(`[^\pL]`)
 	stripPunctuationRegex = regexp.MustCompile(`[[:punct:]]`)
+	namePatterns          = []map[string]string{
+		{`[^\pL-\s']`: ""}, // cut off everything except [ alpha, hyphen, whitespace, apostrophe]
+		{`\s{2,}`: " "},    // trim more than two whitespaces to one
+		{`-{2,}`: "-"},     // trim more than two hyphens to one
+		{`'{2,}`: "'"},     // trim more than two apostrophes to one
+		{`( )*-( )*`: "-"}, // trim enclosing whitespaces around hyphen
+	}
 )
 
 // trimLeft trims extra left hand side of string using provided cutset.
@@ -191,4 +198,13 @@ func stripPunctuation(ctx context.Context, fl modifier.FieldLevel) error {
 		fl.Field().SetString(stripPunctuationRegex.ReplaceAllLiteralString(fl.Field().String(), ""))
 	}
 	return nil
+}
+
+func onlyOne(s string) string {
+	for _, v := range namePatterns {
+		for f, r := range v {
+			s = regexp.MustCompile(f).ReplaceAllLiteralString(s, r)
+		}
+	}
+	return s
 }
