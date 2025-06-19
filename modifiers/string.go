@@ -5,6 +5,7 @@ import (
 	"context"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -230,4 +231,45 @@ func onlyOne(s string) string {
 		}
 	}
 	return s
+}
+
+func subStr(ctx context.Context, fl modifier.FieldLevel) error {
+	switch fl.Field().Kind() {
+	case reflect.String:
+		val := fl.Field().String()
+		params := strings.SplitN(fl.Param(), "-", 2)
+		if len(params) == 0 || len(params[0]) == 0 {
+			return nil
+		}
+
+		start, err := strconv.Atoi(params[0])
+		if err != nil {
+			return err
+		}
+
+		end := len(val)
+		if len(params) >= 2 {
+			if end, err = strconv.Atoi(params[1]); err != nil {
+				return err
+			}
+		}
+
+		if len(val) < start {
+			fl.Field().SetString("")
+			return nil
+		}
+
+		if len(val) < end {
+			end = len(val)
+		}
+
+		if start > end {
+			fl.Field().SetString("")
+			return nil
+		}
+
+		fl.Field().SetString(val[start:end])
+	}
+
+	return nil
 }
