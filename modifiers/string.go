@@ -1,9 +1,12 @@
 package modifiers
 
 import (
+	"bytes"
 	"context"
 	"reflect"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/pchchv/modifier"
 )
@@ -68,5 +71,29 @@ func toUpper(ctx context.Context, fl modifier.FieldLevel) error {
 	case reflect.String:
 		fl.Field().SetString(strings.ToUpper(fl.Field().String()))
 	}
+	return nil
+}
+
+// uppercaseFirstCharacterCase converts a string so that it has only the first capital letter.
+// E. g.: "all lower" -> "All lower".
+func uppercaseFirstCharacterCase(_ context.Context, fl modifier.FieldLevel) error {
+	switch fl.Field().Kind() {
+	case reflect.String:
+		s := fl.Field().String()
+		if s == "" {
+			return nil
+		}
+
+		toRune, size := utf8.DecodeRuneInString(s)
+		if !unicode.IsLower(toRune) {
+			return nil
+		}
+
+		buf := &bytes.Buffer{}
+		buf.WriteRune(unicode.ToUpper(toRune))
+		buf.WriteString(s[size:])
+		fl.Field().SetString(buf.String())
+	}
+
 	return nil
 }
