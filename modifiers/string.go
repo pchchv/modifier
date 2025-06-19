@@ -11,12 +11,14 @@ import (
 
 	"github.com/gosimple/slug"
 	"github.com/pchchv/modifier"
+	"github.com/segmentio/go-camelcase"
 	"github.com/segmentio/go-snakecase"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
 
 var (
+	nameRegex             = regexp.MustCompile(`[\p{L}]([\p{L}|[:space:]\-']*[\p{L}])*`)
 	stripNumRegex         = regexp.MustCompile("[^0-9]")
 	stripAlphaRegex       = regexp.MustCompile("[0-9]")
 	stripAlphaUnicode     = regexp.MustCompile(`[\pL]`)
@@ -196,6 +198,27 @@ func stripPunctuation(ctx context.Context, fl modifier.FieldLevel) error {
 	switch fl.Field().Kind() {
 	case reflect.String:
 		fl.Field().SetString(stripPunctuationRegex.ReplaceAllLiteralString(fl.Field().String(), ""))
+	}
+	return nil
+}
+
+// camelCase converts string to camel case.
+func camelCase(ctx context.Context, fl modifier.FieldLevel) error {
+	switch fl.Field().Kind() {
+	case reflect.String:
+		fl.Field().SetString(camelcase.Camelcase(fl.Field().String()))
+	}
+	return nil
+}
+
+// nameCase Trims, strips numbers and special characters (except dashes and spaces separating names),
+// converts multiple spaces and dashes to single characters, title cases multiple names.
+// Example: "3493€848Jo-$%£@Ann " -> "Jo-Ann", " ~~ The Dude ~~" -> "The Dude", "**susan**" -> "Susan",
+// " hugh fearnley-whittingstall" -> "Hugh Fearnley-Whittingstall".
+func nameCase(ctx context.Context, fl modifier.FieldLevel) error {
+	switch fl.Field().Kind() {
+	case reflect.String:
+		fl.Field().SetString(cases.Title(language.Und, cases.NoLower).String(nameRegex.FindString(onlyOne(strings.ToLower(fl.Field().String())))))
 	}
 	return nil
 }
