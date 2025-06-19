@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"reflect"
+	"regexp"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -13,6 +14,12 @@ import (
 	"github.com/segmentio/go-snakecase"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+)
+
+var (
+	stripNumRegex        = regexp.MustCompile("[^0-9]")
+	stripAlphaRegex      = regexp.MustCompile("[0-9]")
+	stripNumUnicodeRegex = regexp.MustCompile(`[^\pL]`)
 )
 
 // trimLeft trims extra left hand side of string using provided cutset.
@@ -126,6 +133,40 @@ func titleCase(ctx context.Context, fl modifier.FieldLevel) error {
 	switch fl.Field().Kind() {
 	case reflect.String:
 		fl.Field().SetString(cases.Title(language.Und, cases.NoLower).String(fl.Field().String()))
+	}
+	return nil
+}
+
+// stripAlphaCase removes all non-numeric characters.
+// E. g.: "the price is €30,38" -> "3038".
+// NOTE: The struct field will remain a string.
+// No type conversion takes place.
+func stripAlphaCase(_ context.Context, fl modifier.FieldLevel) error {
+	switch fl.Field().Kind() {
+	case reflect.String:
+		fl.Field().SetString(stripNumRegex.ReplaceAllLiteralString(fl.Field().String(), ""))
+	}
+	return nil
+}
+
+// stripNumCase removes all numbers.
+// Example "39472349D34a34v69e8932747" -> "Dave".
+// NOTE: The struct field will remain a string.
+// No type conversion takes place.
+func stripNumCase(_ context.Context, fl modifier.FieldLevel) error {
+	switch fl.Field().Kind() {
+	case reflect.String:
+		fl.Field().SetString(stripAlphaRegex.ReplaceAllLiteralString(fl.Field().String(), ""))
+	}
+	return nil
+}
+
+// stripNumUnicodeCase removes non-alpha unicode characters.
+// E. g.: "!@£$%^&'()Hello 1234567890 World+[];\" -> "HelloWorld"
+func stripNumUnicodeCase(ctx context.Context, fl modifier.FieldLevel) error {
+	switch fl.Field().Kind() {
+	case reflect.String:
+		fl.Field().SetString(stripNumUnicodeRegex.ReplaceAllLiteralString(fl.Field().String(), ""))
 	}
 	return nil
 }
