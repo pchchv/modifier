@@ -25,3 +25,21 @@ func trimRight(ctx context.Context, fl modifier.FieldLevel) error {
 	}
 	return nil
 }
+
+// trimPrefix trims the string of a prefix.
+func trimPrefix(ctx context.Context, fl modifier.FieldLevel) error {
+	switch fl.Field().Kind() {
+	case reflect.String:
+		fl.Field().SetString(strings.TrimPrefix(fl.Field().String(), fl.Param()))
+	}
+	return nil
+}
+
+// trimSuffix trims the string of a suffix.
+func trimSuffix(ctx context.Context, fl modifier.FieldLevel) error {
+	switch fl.Field().Kind() {
+	case reflect.String:
+		fl.Field().SetString(strings.TrimSuffix(fl.Field().String(), fl.Param()))
+	}
+	return nil
+}
