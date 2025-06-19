@@ -1,10 +1,13 @@
 package modifiers
 
 import (
+	"context"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pchchv/modifier"
 )
 
 var (
@@ -106,4 +109,16 @@ func setValueInner(field reflect.Value, param string) error {
 	}
 
 	return nil
+}
+
+func setValue(_ context.Context, fl modifier.FieldLevel) error {
+	return setValueInner(fl.Field(), fl.Param())
+}
+
+// defaultValue allows setting of a default value IF no value is already present.
+func defaultValue(ctx context.Context, fl modifier.FieldLevel) error {
+	if !fl.Field().IsZero() {
+		return nil
+	}
+	return setValue(ctx, fl)
 }
