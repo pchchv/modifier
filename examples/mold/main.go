@@ -9,6 +9,11 @@ import (
 
 var tform *modifier.Transformer
 
+func transformData(ctx context.Context, fl modifier.FieldLevel) error {
+	fl.Field().SetString("test")
+	return nil
+}
+
 func main() {
 	type Test struct {
 		String string `modifier:"set"`
@@ -28,9 +33,4 @@ func main() {
 	}
 
 	log.Println(str)
-}
-
-func transformData(ctx context.Context, fl modifier.FieldLevel) error {
-	fl.Field().SetString("test")
-	return nil
 }
