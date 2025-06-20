@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/pchchv/modifier"
@@ -21,14 +20,14 @@ func main() {
 	if err := tform.Struct(context.Background(), &tt); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%+v\n", tt)
+	log.Printf("%+v\n", tt)
 
 	var str string
 	if err := tform.Field(context.Background(), &str, "set"); err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(str)
+	log.Println(str)
 }
 
 func transformData(ctx context.Context, fl modifier.FieldLevel) error {
