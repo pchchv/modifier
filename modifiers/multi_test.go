@@ -424,3 +424,7 @@ func TestEmpty(t *testing.T) {
 		})
 	}
 }
+
+func newPointer[T any](value T) *T {
+	return &value
+}
