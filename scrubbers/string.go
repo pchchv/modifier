@@ -17,6 +17,17 @@ var (
 		scrubbed := fmt.Sprintf("<<scrubbed::email::sha1::%s>>", hashString(input[idx:]))
 		return scrubbed + input[idx:]
 	}
+	textFn = func(shaName string) modifier.Func {
+		// text scrubs the whole text for PII compliance
+		return func(ctx context.Context, fl modifier.FieldLevel) error {
+			switch fl.Field().Kind() {
+			case reflect.String:
+				scrubbed := fmt.Sprintf("<<scrubbed::%s::sha1::%s>>", shaName, hashString(fl.Field().String()))
+				fl.Field().SetString(scrubbed)
+			}
+			return nil
+		}
+	}
 )
 
 // emails scrubs all emails found for PII compliance
