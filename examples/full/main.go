@@ -11,6 +11,21 @@ import (
 	"github.com/pchchv/validator"
 )
 
+// // This example is centered around a form post, but doesn't have to be
+// // just trying to give a well rounded real life example.
+
+// // <form method="POST">
+// //   <input type="text" name="Name" value="pchchv"/>
+// //   <input type="text" name="Age" value="3"/>
+// //   <input type="text" name="Gender" value="Male"/>
+// //   <input type="text" name="Address[0].Name" value="26 Here Blvd."/>
+// //   <input type="text" name="Address[0].Phone" value="9(999)999-9999"/>
+// //   <input type="text" name="Address[1].Name" value="26 There Blvd."/>
+// //   <input type="text" name="Address[1].Phone" value="1(111)111-1111"/>
+// //   <input type="text" name="active" value="true"/>
+// //   <input type="submit"/>
+// // </form>
+
 var (
 	decoder  = form.NewDecoder()
 	scrub    = scrubbers.New()
@@ -38,7 +53,7 @@ type User struct {
 // parseForm simulates the results of http.Request's ParseForm() function.
 func parseForm() url.Values {
 	return url.Values{
-		"Name":             []string{"  joeybloggs  "},
+		"Name":             []string{"  pchchv  "},
 		"Age":              []string{"3"},
 		"Gender":           []string{"Male"},
 		"Email":            []string{"Dean.Karn@gmail.com  "},
