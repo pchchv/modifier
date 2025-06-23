@@ -1,5 +1,7 @@
 package main
 
+import "net/url"
+
 // Address contains address information.
 type Address struct {
 	Name  string `mod:"trim" validate:"required"`
@@ -18,3 +20,19 @@ type User struct {
 }
 
 func main() {}
+
+// parseForm simulates the results of http.Request's ParseForm() function.
+func parseForm() url.Values {
+	return url.Values{
+		"Name":             []string{"  joeybloggs  "},
+		"Age":              []string{"3"},
+		"Gender":           []string{"Male"},
+		"Email":            []string{"Dean.Karn@gmail.com  "},
+		"Address[0].Name":  []string{"26 Here Blvd."},
+		"Address[0].Phone": []string{"9(999)999-9999"},
+		"Address[1].Name":  []string{"26 There Blvd."},
+		"Address[1].Phone": []string{"1(111)111-1111"},
+		"active":           []string{"true"},
+		"Misc[  b4  ]":     []string{"  b4  "},
+	}
+}
