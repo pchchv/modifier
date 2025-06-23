@@ -54,7 +54,8 @@ These functions obfuscate the specified types within the data for pii purposes.
 | fname  | Scrubs the data from and specifies the sha name of the same name. |
 | lname  | Scrubs the data from and specifies the sha name of the same name. |
 
-**Special Notes:**
+## Special Notes
+
 `default` and `set` modifiers are special in that they can be used to set the value of a field or underlying type information or attributes and both use the same underlying function to set the data.  
 Setting a Param will have the following special effects on data types where it's not just the value being set:
 - Chan - param used to set the buffer size, default = 0.
