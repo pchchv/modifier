@@ -56,9 +56,12 @@ These functions obfuscate the specified types within the data for pii purposes.
 
 ## Special Notes
 
-`default` and `set` modifiers are special in that they can be used to set the value of a field or underlying type information or attributes and both use the same underlying function to set the data.  
+`default` and `set` modifiers are special in that they can be used to set the value of a field or underlying type information or attributes and both use the same underlying function to set the data.
+
 Setting a Param will have the following special effects on data types where it's not just the value being set:
 - Chan - param used to set the buffer size, default = 0.
 - Slice - param used to set the capacity, default = 0.
 - Map - param used to set the size, default = 0.
 - time.Time - param used to set the time format OR value, default = time.Now(), `utc` = time.Now().UTC(), other tries to parse using RFC3339Nano and set a time value.
+
+To use a comma(,) within your params replace use it's hex representation instead '0x2C' which will be replaced while caching.
