@@ -41,3 +41,16 @@ These functions modify the data in-place.
 | tsuffix             | Trims a suffix from the value using the provided param value.                             |
 | ucase               | Uppercases the data.                                                                      |
 | ucfirst             | Upper cases the first character of the data.                                              |
+
+## Scrubbers
+
+These functions obfuscate the specified types within the data for pii purposes.
+
+| Name   | Description                                                       |
+|--------|-------------------------------------------------------------------|
+| emails | Scrubs multiple emails from data.                                 |
+| email  | Scrubs the data from and specifies the sha name of the same name. |
+| text   | Scrubs the data from and specifies the sha name of the same name. |
+| name   | Scrubs the data from and specifies the sha name of the same name. |
+| fname  | Scrubs the data from and specifies the sha name of the same name. |
+| lname  | Scrubs the data from and specifies the sha name of the same name. |
